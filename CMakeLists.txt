@@ -19,6 +19,8 @@ INCLUDE_DIRECTORIES(
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR
    ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  add_definitions(-std=c++11)
+  add_definitions(-std=c++17)
+else()
+	add_compile_options("/std:c++17")
 endif()
 ADD_EXECUTABLE(header-parser ${SOURCES} parser.cc parser.h main.h)
