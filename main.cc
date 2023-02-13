@@ -6,7 +6,10 @@
 #include <fstream>
 #include <sstream>
 #include <fstream>
+#include <array>
 #include <filesystem>
+
+#include <Windows.h>
 
 //----------------------------------------------------------------------------------------------------
 void print_usage()
@@ -20,6 +23,9 @@ int main(int argc, char** argv)
     Options options;
     std::string inputFolder;
     std::string outputFolder;
+
+    std::cout << "Fetching parameters\n";
+
     try
     {
         using namespace TCLAP;
@@ -50,7 +56,23 @@ int main(int argc, char** argv)
         return -1;
     }  
 
-    for (auto const& dirEntry : std::filesystem::recursive_directory_iterator("sources"))
+    const auto rootPath = []() -> std::filesystem::path
+    {
+        std::string rootPath;
+        rootPath.resize(MAX_PATH);
+        GetModuleFileNameA(NULL, rootPath.data(), rootPath.size());
+        return rootPath;
+    }();
+
+    const auto dirPath{ rootPath.parent_path() };
+
+//    const auto currPath{ std::filesystem::current_path()};
+    std::cout << "Directory path: " << dirPath << '\n';
+
+    const auto searchPath{ dirPath / std::filesystem::path(inputFolder) };
+    std::cout << "Search path: " << searchPath << '\n';
+
+    for (auto const& dirEntry : std::filesystem::recursive_directory_iterator(searchPath))
     {
 
         if (!dirEntry.is_regular_file())
@@ -71,8 +93,9 @@ int main(int argc, char** argv)
         Parser parser(options);
         if (parser.Parse(buffer.str().c_str()))
         {
-            const auto filename{ filePath.filename().string() };
-            const auto outputFile{ outputFolder + "\\" + filename + ".json" };
+            const auto filename{ filePath.filename().stem().string()};
+            const auto outputFile{ std::filesystem::path(dirPath / outputFolder / filename).replace_extension(".json")};
+            std::cout << "Output file: " << outputFile << '\n';
             std::ofstream out(outputFile);
             out << parser.result();
         }
